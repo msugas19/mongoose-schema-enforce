@@ -4,33 +4,26 @@
 
 'use strict';
 
-var async = require('async');
 
-module.exports = {
-    findSchemaSafePlugin: findSchemaSafePlugin
-};
+module.exports = findSchemaSafePlugin;
 
 function findSchemaSafePlugin(schema) {
-    schema.statics.findSchemaSafe = function findSchemaSafe(condition,options, callback) {
+    schema.statics.findSchemaSafe = function findSchemaSafe(condition, options, callback) {
         var self = this;
 
         self.find(condition, function (err, results) {
             if (err) {
                 callback(err, null);
             } else {
-                if(options === undefined || options === null || !options.hasOwnProperty('removeFields')){
-                    options = {removeFields:null}
+                if (options === undefined || options === null || !options.hasOwnProperty('removeFields') ||
+                    typeof options['removeFields'] !== 'object') {
+                    options = {removeFields: null}
                 }
-                callback(null, iterateThroughSchema(schema,results, options));
+                callback(null, iterateThroughSchema(schema, results, options));
             }
         });
     };
 }
-
-
-
-
-
 
 function iterateThroughSchema(schema, results, options) {
     var tasks = [];
@@ -42,30 +35,31 @@ function iterateThroughSchema(schema, results, options) {
     return results;
 }
 
-function iterateNestedObjects(schema, result, options){
+function iterateNestedObjects(schema, result, options) {
 
     var element = {};
 
     Object.keys(schema.paths).forEach(function (key, ind, arr) {
         if (schema.paths[key].hasOwnProperty("schema")) {
-            //element[key] = {};
-            element[key]= iterateNestedObjects(schema.paths[key].schema,result[key], options);
-        } else {
-            //element[key] = result.hasOwnProperty(key) ? result[key] : null;
+            element[key] = iterateNestedObjects(schema.paths[key].schema, result[key], options);
+        } else {    
             element[key] = result[key] ? result[key] : null;
         }
     });
 
-    if(options.removeFields !== null){
+    if (options.removeFields !== null) {
         //Remove specified fields
-        options.removeFields.forEach(function(field){
-            try{
-                delete element[field];
-            } catch(err){
-                console.warn("Object does not contain field to delete: " + field);
-            }
-
-        });
+        try {
+            options.removeFields.forEach(function (field) {
+                try {
+                    delete element[field];
+                } catch (err) {
+                    console.warn("Object does not contain field to delete: " + field);
+                }
+            });
+        } catch (err) {
+            console.warn("Options are not specified as an array");
+        }
     }
 
     return element;
