@@ -46,6 +46,7 @@ function iterateNestedObjects(schema, result, options) {
 
     Object.keys(schema.paths).forEach(function (key, ind, arr) {
         if (schema.paths[key].hasOwnProperty("schema")) {
+            result[key] = result[key] ? result[key] : {};
             if(schema.paths[key].instance === "Array"){
                 //Handle nested Arrays
                 element[key] = iterateThroughSchema(schema.paths[key].schema, result[key], options);
